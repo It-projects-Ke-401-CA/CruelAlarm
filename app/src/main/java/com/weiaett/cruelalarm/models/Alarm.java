@@ -10,7 +10,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.weiaett.cruelalarm.R;
-import com.weiaett.cruelalarm.WakeUpBroadcastReceiver;
+import com.weiaett.cruelalarm.sheduling.WakeUpBroadcastReceiver;
 import com.weiaett.cruelalarm.utils.Weekday;
 import com.weiaett.cruelalarm.utils.DBHelper;
 import com.weiaett.cruelalarm.utils.Utils;
@@ -18,6 +18,7 @@ import com.weiaett.cruelalarm.utils.Utils;
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.EnumSet;
+import java.util.List;
 
 /**
  * Created by Weiss_A on 26.09.2016.
@@ -36,6 +37,7 @@ public class Alarm implements Serializable{
     private String description = "";
     private String time;
     private transient Context context;
+    private List<String> images;
 
     public Alarm(Context context, String time) {
         SharedPreferences config = context.getSharedPreferences(context.
@@ -167,6 +169,15 @@ public class Alarm implements Serializable{
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public List<String> getImages() {
+        return images;
+    }
+
+    public void setImages(List<String> images) {
+        this.images = images;
+        DBHelper.getInstance(context).setAlarmPhotos(this.getId(), images);
     }
 
     public EnumSet<Weekday> getDays() {

@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.SpannableString;
@@ -25,11 +27,12 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import com.weiaett.cruelalarm.photo_manager.PhotoManagerFragment;
 import com.weiaett.cruelalarm.R;
-import com.weiaett.cruelalarm.utils.Weekday;
 import com.weiaett.cruelalarm.graphics.ColorCircleDrawable;
 import com.weiaett.cruelalarm.models.Alarm;
 import com.weiaett.cruelalarm.utils.Utils;
+import com.weiaett.cruelalarm.utils.Weekday;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -201,6 +204,12 @@ class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         alarm.setHasVibration(hasVibration);
         alarm.updateAttributesInDatabase();
+    }
+
+    void setAlarmParams(int position, Uri toneUri, String tone, boolean hasVibration, List<String> images) {
+        Alarm alarm = alarms.get(position);
+        alarm.setImages(images);
+        setAlarmParams(position, toneUri, tone, hasVibration);
     }
 
     void onActivityResult(int resultCode, Intent ringtoneIntent) {
@@ -377,9 +386,13 @@ class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             photoView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    // TODO: call photo picker dialog
+                    DialogFragment dialogFragment = PhotoManagerFragment.newInstance(item.getId());
+//                    dialogFragment.setTargetFragment();
+                    FragmentManager fragmentManager = ((AlarmListActivity)context).getSupportFragmentManager();
+                    dialogFragment.show(fragmentManager,"Photo Manager");
                 }
             });
+
 
             toneView.setOnClickListener(new View.OnClickListener() {
                 @Override

@@ -1,4 +1,4 @@
-package com.weiaett.cruelalarm.utils;
+package com.weiaett.cruelalarm.sheduling;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -9,8 +9,8 @@ import android.os.IBinder;
 import android.util.Log;
 
 import com.weiaett.cruelalarm.R;
-import com.weiaett.cruelalarm.WakeUpBroadcastReceiver;
 import com.weiaett.cruelalarm.models.Alarm;
+import com.weiaett.cruelalarm.utils.DBHelper;
 
 import java.util.Comparator;
 import java.util.List;

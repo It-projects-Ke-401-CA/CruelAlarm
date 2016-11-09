@@ -1,4 +1,4 @@
-package com.weiaett.cruelalarm;
+package com.weiaett.cruelalarm.sheduling;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -6,8 +6,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.weiaett.cruelalarm.R;
+import com.weiaett.cruelalarm.WakeUpActivity;
 import com.weiaett.cruelalarm.models.Alarm;
-import com.weiaett.cruelalarm.utils.AlarmServiceBroadcastReceiver;
 import com.weiaett.cruelalarm.utils.Utils;
 
 public class WakeUpBroadcastReceiver extends BroadcastReceiver {

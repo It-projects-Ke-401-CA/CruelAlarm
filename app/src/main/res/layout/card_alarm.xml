@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
-    android:layout_marginTop="10dp"
+    android:layout_margin="5dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -14,6 +14,7 @@
         android:background="@null"
         android:layout_gravity="end"
         android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
         android:layout_marginTop="4dp"
         android:tint="@color/colorGreyText"
         android:id="@+id/btnClear" />
@@ -48,6 +49,7 @@
         android:text="Пн  Вт  Ср  Чт  Пт  Сб  Вс"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
         android:layout_marginStart="16dp"
         android:fontFamily="sans-serif-light"
         android:id="@+id/tvDays" />
@@ -58,6 +60,7 @@
         app:srcCompat="@drawable/ic_keyboard_arrow_down_black_18dp"
         android:background="@null"
         android:layout_gravity="end"
+        android:layout_marginRight="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="4dp"
         android:tint="@color/colorGreyText"

@@ -125,21 +125,7 @@ public class DBHelper extends SQLiteOpenHelper {
             if (cursor.moveToFirst()) {
                 do {
                     Alarm newAlarm = new Alarm(context);
-                    newAlarm.setId(cursor.getInt(cursor.getColumnIndex(String.
-                            format("%1$s", COLUMN_ALARM_ID))));
-                    newAlarm.setTime(cursor.getString(cursor.getColumnIndex(String.
-                            format("%1$s", COLUMN_ALARM_TIME))));
-                    newAlarm.setIsActive(cursor.getInt(cursor.getColumnIndex(String.
-                            format("%1$s", COLUMN_ALARM_IS_ACTIVE))) > 0);
-                    newAlarm.setTone(cursor.getString(cursor.getColumnIndex(String.
-                            format("%1$s", COLUMN_ALARM_TONE))));
-                    newAlarm.setToneUri(Uri.parse(cursor.getString(cursor.getColumnIndex(String.
-                            format("%1$s", COLUMN_ALARM_TONE_URI)))));
-                    newAlarm.setHasVibration(cursor.getInt(cursor.getColumnIndex(String.
-                            format("%1$s", COLUMN_ALARM_HAS_VIBRATION))) > 0);
-                    newAlarm.setDescription(cursor.getString(cursor.getColumnIndex(String.
-                            format("%1$s", COLUMN_ALARM_DESCRIPTION))));
-                    bindAlarmDays(newAlarm);
+                    bindAlarm(newAlarm, cursor);
                     alarms.add(newAlarm);
                 } while(cursor.moveToNext());
             }
@@ -151,6 +137,46 @@ public class DBHelper extends SQLiteOpenHelper {
             }
         }
         return alarms;
+    }
+
+    public Alarm getAlarm(Context context, int id) {
+        Alarm alarm = new Alarm(context);
+        String ALARMS_SELECT_QUERY =
+                String.format(Locale.US, "SELECT * FROM %s WHERE alarm_id = %d;",
+                        ALARM_TABLE, id);
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery(ALARMS_SELECT_QUERY, null);
+        try {
+            if (cursor.moveToFirst()) {
+                bindAlarm(alarm, cursor);
+            }
+        } catch (Exception e) {
+            Log.d(TAG, e.getMessage());
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+        }
+        return alarm;
+    }
+
+    private void bindAlarm(Alarm alarm, Cursor cursor) {
+        alarm.setId(cursor.getInt(cursor.getColumnIndex(String.
+                format("%1$s", COLUMN_ALARM_ID))));
+        alarm.setTime(cursor.getString(cursor.getColumnIndex(String.
+                format("%1$s", COLUMN_ALARM_TIME))));
+        alarm.setIsActive(cursor.getInt(cursor.getColumnIndex(String.
+                format("%1$s", COLUMN_ALARM_IS_ACTIVE))) > 0);
+        alarm.setTone(cursor.getString(cursor.getColumnIndex(String.
+                format("%1$s", COLUMN_ALARM_TONE))));
+        alarm.setToneUri(Uri.parse(cursor.getString(cursor.getColumnIndex(String.
+                format("%1$s", COLUMN_ALARM_TONE_URI)))));
+        alarm.setHasVibration(cursor.getInt(cursor.getColumnIndex(String.
+                format("%1$s", COLUMN_ALARM_HAS_VIBRATION))) > 0);
+        alarm.setDescription(cursor.getString(cursor.getColumnIndex(String.
+                format("%1$s", COLUMN_ALARM_DESCRIPTION))));
+        bindAlarmDays(alarm);
+        bindAlarmPhotos(alarm);
     }
 
     private void bindAlarmDays(Alarm alarm) {
@@ -173,6 +199,29 @@ public class DBHelper extends SQLiteOpenHelper {
                 cursor.close();
             }
         }
+    }
+
+    private void bindAlarmPhotos(Alarm alarm) {
+        List<String> images = new ArrayList<>();
+        String PHOTOS_SELECT_QUERY =
+                String.format("SELECT * FROM %1$s WHERE %2$s = %3$s;",
+                        PHOTO_ALARM_TABLE, COLUMN_ALARM_ID, alarm.getId());
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery(PHOTOS_SELECT_QUERY, null);
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    images.add(cursor.getString(cursor.getColumnIndex(String.format("%1$s", COLUMN_PHOTO_ID))));
+                } while(cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.d(TAG, e.getMessage());
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+        }
+        alarm.setImages(images);
     }
 
     public void addAlarm(Alarm alarm) {
@@ -251,5 +300,29 @@ public class DBHelper extends SQLiteOpenHelper {
             e.printStackTrace();
         }
 //        db.rawQuery(ALARM_DELETE_QUERY, null);
+    }
+
+    public void setAlarmPhotos(int id, List<String> photos) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+
+        String sqlDelete;
+        sqlDelete = String.format(Locale.US,
+                "DELETE FROM %1$s WHERE %2$s = %3$d;",
+                PHOTO_ALARM_TABLE, COLUMN_ALARM_ID, id);
+        SQLiteStatement statementDelete = db.compileStatement(sqlDelete);
+        statementDelete.execute();
+
+        for (String photo: photos) {
+            String sql = "INSERT OR REPLACE INTO " + PHOTO_ALARM_TABLE +" VALUES (?,?);";
+            SQLiteStatement statement = db.compileStatement(sql);
+            statement.clearBindings();
+            statement.bindLong(1, id);
+            statement.bindString(2, photo);
+            statement.execute();
+        }
+
+        db.setTransactionSuccessful();
+        db.endTransaction();
     }
 }

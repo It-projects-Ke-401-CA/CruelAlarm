@@ -1,4 +1,4 @@
-package com.weiaett.cruelalarm.utils;
+package com.weiaett.cruelalarm.sheduling;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

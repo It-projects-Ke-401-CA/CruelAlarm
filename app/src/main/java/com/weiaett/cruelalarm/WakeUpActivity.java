@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.weiaett.cruelalarm.models.Alarm;
+import com.weiaett.cruelalarm.sheduling.WakeUpBroadcastReceiver;
 import com.weiaett.cruelalarm.utils.Utils;
 
 import java.util.Calendar;
