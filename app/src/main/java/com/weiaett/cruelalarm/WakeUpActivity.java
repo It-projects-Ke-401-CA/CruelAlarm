@@ -334,7 +334,7 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
         player.stop();
         if (vibrator != null)
             vibrator.cancel();
-        Utils.lockScreen(this);
+//        Utils.lockScreen(this);
         if (Build.VERSION.SDK_INT > 21)
             finishAndRemoveTask();
         else {

@@ -3,6 +3,7 @@ package com.weiaett.cruelalarm.photo_manager;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.hardware.Camera;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,20 +24,28 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TableRow;
+import android.widget.Toast;
 
 import com.weiaett.cruelalarm.R;
+import com.weiaett.cruelalarm.WakeUpActivity;
 import com.weiaett.cruelalarm.graphics.AutofitRecyclerView;
 import com.weiaett.cruelalarm.utils.ImageLoader;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 public class PhotoManagerActivity extends AppCompatActivity implements
         PhotoManagerFragment.OnFragmentInteractionListener,
-        RecyclerView.OnItemTouchListener {
+        RecyclerView.OnItemTouchListener,
+        SurfaceHolder.Callback {
 
     private static final int CAMERA_REQUEST = 0;
     private Uri fileUri;
@@ -44,10 +53,14 @@ public class PhotoManagerActivity extends AppCompatActivity implements
     private GestureDetectorCompat gestureDetector;
     private PhotoManagerActivity.RecyclerViewOnGestureListener recyclerViewOnGestureListener;
     private PhotoManagerFragment photoManagerFragment;
+    private SurfaceHolder surfaceHolder;
     private PhotoManagerAdapter photoManagerAdapter;
     private RecyclerView recyclerView;
+    private View viewCamera;
+    private View viewWakeUp;
     private String SCAN_PATH;
     private static final String FILE_TYPE = "image/*";
+    private Camera camera;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,15 +78,29 @@ public class PhotoManagerActivity extends AppCompatActivity implements
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-                fileUri = ImageLoader.prepareUri(PhotoManagerActivity.this);
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
-                startActivityForResult(cameraIntent, CAMERA_REQUEST);
+                viewWakeUp.setVisibility(View.GONE);
+                viewCamera.setVisibility(View.VISIBLE);
+
+                if (camera != null) {
+                    try {
+                        camera.setPreviewDisplay(surfaceHolder);
+                        camera.startPreview();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+//                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+//                fileUri = ImageLoader.prepareUri(PhotoManagerActivity.this);
+//                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
+//                startActivityForResult(cameraIntent, CAMERA_REQUEST);
             }
         });
 
         recyclerViewOnGestureListener = new PhotoManagerActivity.RecyclerViewOnGestureListener();
         gestureDetector = new GestureDetectorCompat(this, recyclerViewOnGestureListener);
+
+        viewCamera = findViewById(R.id.incCamera);
+        viewWakeUp = findViewById(R.id.incWakeUp);
 
         photoManagerFragment = (PhotoManagerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragmentPhotoManager);
@@ -96,7 +123,56 @@ public class PhotoManagerActivity extends AppCompatActivity implements
                 }
             }
         });
+
+        SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
+        surfaceHolder = surfaceView.getHolder();
+        surfaceHolder.addCallback(this);
+        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        camera = getCameraInstance();
+
+        Camera.Parameters params = camera.getParameters();
+        List<Camera.Size> supportedSizes = params.getSupportedPictureSizes();
+
+        Camera.Size bestSize = supportedSizes.get(0);
+        for(int i = 1; i < supportedSizes.size(); i++){
+            if((supportedSizes.get(i).width * supportedSizes.get(i).height) > (bestSize.width * bestSize.height)){
+                bestSize = supportedSizes.get(i);
+            }
+        }
+
+        params.setPictureSize(bestSize.width, bestSize.height);
+        camera.setParameters(params);
+
+        findViewById(R.id.ivPhoto).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                camera.takePicture(null, null, PhotoManagerActivity.this.onPictureTaken);
+            }
+        });
     }
+
+    private Camera.PictureCallback onPictureTaken = new Camera.PictureCallback() {
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera) {
+            File lastPhoto = ImageLoader.prepareFile(PhotoManagerActivity.this);
+            if (lastPhoto == null){
+                Log.d("Camera", "Error creating media file, check storage permissions");
+                return;
+            }
+            try {
+                FileOutputStream fos = new FileOutputStream(lastPhoto);
+                fos.write(data);
+                fos.close();
+            } catch (FileNotFoundException e) {
+                Log.d("Camera", "File not found: " + e.getMessage());
+            } catch (IOException e) {
+                Log.d("Camera", "Error accessing file: " + e.getMessage());
+            }
+            viewCamera.setVisibility(View.GONE);
+            viewWakeUp.setVisibility(View.VISIBLE);
+            photoManagerFragment.addPhoto(lastPhoto);
+        }
+    };
 
     private void toggleSelection(int position) {
         photoManagerAdapter.toggleSelection(position);
@@ -123,9 +199,57 @@ public class PhotoManagerActivity extends AppCompatActivity implements
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
-            photoManagerFragment.addPhoto(new File(fileUri.getPath()));
+//        if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
+//            photoManagerFragment.addPhoto(new File(fileUri.getPath()));
+//        }
+    }
+
+
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        try {
+            if (camera == null) {
+                camera = getCameraInstance();
+            }
+            camera.setPreviewDisplay(surfaceHolder);
+            camera.startPreview();
+        } catch (IOException e) {
+            Log.d("Camera", "Error setting camera preview: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+        // If your preview can change or rotate, take care of those events here.
+        // Make sure to stop the preview before resizing or reformatting it.
+
+        if (surfaceHolder.getSurface() == null){
+            // preview surface does not exist
+            return;
+        }
+
+        // stop preview before making changes
+        try {
+            camera.stopPreview();
+        } catch (Exception e){
+            // ignore: tried to stop a non-existent preview
+        }
+
+        // set preview size and make any resize, rotate or
+        // reformatting changes here
+
+        // start preview with new settings
+        try {
+            camera.setPreviewDisplay(surfaceHolder);
+            camera.startPreview();
+
+        } catch (Exception e){
+            Log.d("Camera", "Error starting camera preview: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
     }
 
     @Override
@@ -259,5 +383,18 @@ public class PhotoManagerActivity extends AppCompatActivity implements
             photoManagerAdapter.notifyDataSetChanged();
             super.onLongPress(e);
         }
+    }
+
+    public Camera getCameraInstance(){
+        if (camera == null) {
+            try {
+                camera = Camera.open(); // attempt to get a Camera instance
+            } catch (Exception e) {
+                e.printStackTrace();
+                // Camera is not available (in use or does not exist)
+            }
+        }
+        camera.setDisplayOrientation(90);
+        return camera; // returns null if camera is unavailable
     }
 }

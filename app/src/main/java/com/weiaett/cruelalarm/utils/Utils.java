@@ -152,11 +152,11 @@ public class Utils {
         }
     }
 
-    public static int pxToDp(int px) {
+    private static int pxToDp(int px) {
         return (int) (px / Resources.getSystem().getDisplayMetrics().density);
     }
 
-    public static int dpToPx(int dp) {
+    private static int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 
@@ -176,9 +176,9 @@ public class Utils {
                 | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     }
 
-    public static void lockScreen(AppCompatActivity activity) {
-        DevicePolicyManager devicePolicyManager;
-        devicePolicyManager = (DevicePolicyManager) activity.getSystemService(Context.DEVICE_POLICY_SERVICE);
-        devicePolicyManager.lockNow();
-    }
+//    public static void lockScreen(AppCompatActivity activity) {
+//        DevicePolicyManager devicePolicyManager;
+//        devicePolicyManager = (DevicePolicyManager) activity.getSystemService(Context.DEVICE_POLICY_SERVICE);
+//        devicePolicyManager.lockNow();
+//    }
 }
