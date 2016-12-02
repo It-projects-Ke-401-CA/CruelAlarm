@@ -36,7 +36,6 @@
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize"/>
         <activity android:name=".WakeUpActivity"
-
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize">
             <!--<intent-filter>-->

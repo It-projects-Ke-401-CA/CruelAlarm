@@ -27,6 +27,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,6 +41,10 @@ import com.weiaett.cruelalarm.sheduling.WakeUpBroadcastReceiver;
 import com.weiaett.cruelalarm.utils.DBHelper;
 import com.weiaett.cruelalarm.utils.ImageLoader;
 import com.weiaett.cruelalarm.utils.Utils;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -59,6 +64,7 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
     private SurfaceHolder surfaceHolder;
     private View viewCamera;
     private View viewWakeUp;
+    private ProgressBar progressBar;
     private ImageView photoFull;
     private ImageView photoPreview;
     private ImageView ivSurrender;
@@ -69,30 +75,43 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
     private BroadcastReceiver compReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-        String result = intent.getStringExtra(ComparatorService.Companion.getRESULT());
-        //server can also return state
-        if(result != null){
-            Log.d("Comparison result", result);
-            // compare refPhoto and lastPhoto
-            if (result.equals("Images matched!")) { // photo were matched
-                returnToMainScreen();
-                callRepeatDialog();
-            } else { // photo were not matched
-                Toast.makeText(WakeUpActivity.this, "Фотографии не совпадают", Toast.LENGTH_SHORT).show();
-                returnToMainScreen();
-                setupPhoto();
-                attempt++;
+            String result = intent.getStringExtra(ComparatorService.Companion.getRESULT());
+            //server can also return state
+            if(result != null) {
+                Log.d("Comparison result", result);
+                progressBarOff();
+                // compare refPhoto and lastPhoto
+                if (result.equals("Images matched!")) { // photo were matched
+                    callRepeatDialog();
+                } else { // photo were not matched
+                    Toast.makeText(WakeUpActivity.this, "Фотографии не совпадают", Toast.LENGTH_SHORT).show();
+                    setupPhoto();
+                    attempt++;
+                }
             }
-        }
         }
     };
 
-    // TODO: real comparison + empty photo manager
+    private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                    Log.i("OpenCV", "OpenCV loaded successfully");
+                    break;
+                default:
+                    super.onManagerConnected(status);
+                    Log.i("OpenCV", "Something went wrong with OpenCV load");
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_wake_up);
+
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_11, this, loaderCallback);
 
         Utils.unlockScreen(this);
 
@@ -103,12 +122,10 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
             alarm = new Alarm(this);
         }
 
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        alarm = DBHelper.getInstance(this).getAllAlarms(this).get(0);
-
         ((TextView) this.findViewById(R.id.tvDescription)).setText(alarm.getDescription());
         viewCamera = findViewById(R.id.incCamera);
         viewWakeUp = findViewById(R.id.incWakeUp);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
 
         SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
         surfaceHolder = surfaceView.getHolder();
@@ -155,6 +172,7 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
             @Override
             public void onClick(View view) {
                 camera.takePicture(null, null, WakeUpActivity.this.onPictureTaken);
+                progressBarOn();
             }
         });
 
@@ -293,17 +311,6 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
             i.putExtra(ComparisonActivity.Companion.getPATH_1(), refPhoto.getPath());
             i.putExtra(ComparisonActivity.Companion.getPATH_2(), path);
             startService(i);
-
-//            // compare refPhoto and lastPhoto
-//            if (false) { // photo were matched
-//                returnToMainScreen();
-//                callRepeatDialog();
-//            } else { // photo were not matched
-//                Toast.makeText(WakeUpActivity.this, "Фотографии не совпадают", Toast.LENGTH_SHORT).show();
-//                returnToMainScreen();
-//                setupPhoto();
-//                attempt++;
-//            }
             lastPhoto.delete();
         }
     };
@@ -323,9 +330,14 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
             }
         });
         builder.setTitle("Повтор будильника");
-        builder.setCancelable(false);
+        builder.setCancelable(true);
         AlertDialog dialog = builder.create();
-        dialog.show();
+        if (!this.isFinishing()) {
+            Log.d("WakeUpActivity", "context is lost");
+            dialog.show();
+        } else {
+            terminate();
+        }
     }
 
     private void setupPhoto() {
@@ -346,18 +358,28 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
         } while (!fileExists && !alarm.getImages().isEmpty());
 
         if (fileExists) {
-            Glide.with(this)
+            Glide.with(getApplicationContext())
                     .load(path)
                     .fitCenter()
                     .into(photoPreview);
 
-            Glide.with(this)
+            Glide.with(getApplicationContext())
                     .load(path)
                     .fitCenter()
                     .into(photoFull);
         } else {
             callMathTask();
         }
+    }
+
+    private void progressBarOn() {
+        viewCamera.setVisibility(View.GONE);
+        progressBar.setVisibility(View.VISIBLE);
+    }
+
+    private void progressBarOff() {
+        progressBar.setVisibility(View.GONE);
+        returnToMainScreen();
     }
 
     private void repeat() {
@@ -380,8 +402,7 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
         player.stop();
         if (vibrator != null)
             vibrator.cancel();
-//        Utils.lockScreen(this);
-        if (Build.VERSION.SDK_INT > 21)
+        if (Build.VERSION.SDK_INT >= 21)
             finishAndRemoveTask();
         else {
             int iWantToExit = 10 / 0; // TODO
@@ -428,16 +449,16 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
 
     @Override
     protected void onDestroy() {
-        Intent myIntent = new Intent(this, WakeUpBroadcastReceiver.class);
-        myIntent.putExtra(this.getString(R.string.intent_alarm), alarm);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, myIntent,PendingIntent.FLAG_CANCEL_CURRENT);
-        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.SECOND, 10);
-        alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-
-        LocalBroadcastManager.getInstance(getApplicationContext())
-                .unregisterReceiver(compReceiver);
+//        Intent myIntent = new Intent(this, WakeUpBroadcastReceiver.class);
+//        myIntent.putExtra(this.getString(R.string.intent_alarm), alarm);
+//        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, myIntent,PendingIntent.FLAG_CANCEL_CURRENT);
+//        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+//        Calendar calendar = Calendar.getInstance();
+//        calendar.add(Calendar.SECOND, 10);
+//        alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+//
+//        LocalBroadcastManager.getInstance(getApplicationContext())
+//                .unregisterReceiver(compReceiver);
         super.onDestroy();
     }
 
