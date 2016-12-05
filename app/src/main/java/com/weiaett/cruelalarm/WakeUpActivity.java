@@ -71,6 +71,7 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
     private int attempt = 0;
     private boolean canSurrender = false;
     private File refPhoto;
+    private boolean legalTurnOff = false;
 
     private BroadcastReceiver compReceiver = new BroadcastReceiver() {
         @Override
@@ -332,10 +333,11 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
         builder.setTitle("Повтор будильника");
         builder.setCancelable(true);
         AlertDialog dialog = builder.create();
+        legalTurnOff = true;
         if (!this.isFinishing()) {
-            Log.d("WakeUpActivity", "context is lost");
             dialog.show();
         } else {
+            Log.d("WakeUpActivity", "context is lost");
             terminate();
         }
     }
@@ -449,16 +451,18 @@ public class WakeUpActivity extends AppCompatActivity implements SurfaceHolder.C
 
     @Override
     protected void onDestroy() {
-//        Intent myIntent = new Intent(this, WakeUpBroadcastReceiver.class);
-//        myIntent.putExtra(this.getString(R.string.intent_alarm), alarm);
-//        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, myIntent,PendingIntent.FLAG_CANCEL_CURRENT);
-//        AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
-//        Calendar calendar = Calendar.getInstance();
-//        calendar.add(Calendar.SECOND, 10);
-//        alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-//
-//        LocalBroadcastManager.getInstance(getApplicationContext())
-//                .unregisterReceiver(compReceiver);
+        if (!legalTurnOff) {
+            Intent myIntent = new Intent(this, WakeUpBroadcastReceiver.class);
+            myIntent.putExtra(this.getString(R.string.intent_alarm), alarm);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, myIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+            AlarmManager alarmManager = (AlarmManager) this.getSystemService(Context.ALARM_SERVICE);
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.SECOND, 10);
+            alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+
+            LocalBroadcastManager.getInstance(getApplicationContext())
+                    .unregisterReceiver(compReceiver);
+        }
         super.onDestroy();
     }
 
