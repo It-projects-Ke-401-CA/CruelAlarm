@@ -40,7 +40,7 @@ public class AlarmService extends Service {
             alarm.schedule(getApplicationContext());
         } else {
             Intent myIntent = new Intent(getApplicationContext(), WakeUpBroadcastReceiver.class);
-            myIntent.putExtra(this.getString(R.string.intent_alarm), new Alarm(getBaseContext()));
+            myIntent.putExtra(this.getString(R.string.intent_alarm), new Alarm());
             PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, myIntent,PendingIntent.FLAG_CANCEL_CURRENT);
             AlarmManager alarmManager = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
 

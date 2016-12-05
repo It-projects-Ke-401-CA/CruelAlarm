@@ -11,11 +11,14 @@ import android.util.Log;
 
 import com.weiaett.cruelalarm.R;
 import com.weiaett.cruelalarm.sheduling.WakeUpBroadcastReceiver;
+import com.weiaett.cruelalarm.utils.ImageLoader;
 import com.weiaett.cruelalarm.utils.Weekday;
 import com.weiaett.cruelalarm.utils.DBHelper;
 import com.weiaett.cruelalarm.utils.Utils;
 
+import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.EnumSet;
 import java.util.List;
@@ -37,7 +40,7 @@ public class Alarm implements Serializable{
     private String description = "";
     private String time;
     private transient Context context;
-    private List<String> images;
+    private List<String> images = new ArrayList<>();
 
     public Alarm(Context context, String time) {
         SharedPreferences config = context.getSharedPreferences(context.
@@ -49,10 +52,30 @@ public class Alarm implements Serializable{
         this.toneUriString = this.toneUri.toString();
         this.tone = RingtoneManager.getRingtone(context, this.toneUri).getTitle(context);
         this.hasVibration = config.getBoolean(context.getString(com.weiaett.cruelalarm.R.string.sp_config_vibration), false);
+
+        DBHelper.getInstance(context).addAlarm(this);
+        List<String> files = ImageLoader.getImagesPaths(context);
+        if (files.isEmpty()) {
+            this.isActive = false;
+        } else {
+            this.setImages(files);
+        }
     }
 
     public Alarm(Context context) {
-        this(context, context.getString(R.string.time_default));
+//        this(context, context.getString(R.string.time_default));
+        SharedPreferences config = context.getSharedPreferences(context.
+                getString(com.weiaett.cruelalarm.R.string.sp_config), Context.MODE_PRIVATE);
+        this.context = context;
+        this.time = context.getString(R.string.time_default);
+        this.toneUri = Uri.parse(config.getString(context.getString(com.weiaett.cruelalarm.R.string.sp_config_tone_uri),
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM).toString()));
+        this.toneUriString = this.toneUri.toString();
+        this.tone = RingtoneManager.getRingtone(context, this.toneUri).getTitle(context);
+        this.hasVibration = config.getBoolean(context.getString(com.weiaett.cruelalarm.R.string.sp_config_vibration), false);
+    }
+
+    public Alarm() {
     }
 
     public int getId() {
@@ -197,7 +220,7 @@ public class Alarm implements Serializable{
         Utils.callAlarmScheduleService(context);
     }
 
-    public void addToDatabase() {
+    private void addToDatabase() {
         DBHelper.getInstance(context).addAlarm(this);
         Utils.callAlarmScheduleService(context);
     }

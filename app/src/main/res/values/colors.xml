@@ -6,6 +6,8 @@
     <color name="colorNotActive">#5D5D5D</color>
     <color name="colorGreyText">#5D5D5D</color>
     <color name="colorWhiteText">#FFFFFF</color>
+    <color name="colorWhiteTransp">#99FFFFFF</color>
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorGrey">#BCBCBC</color>
+    <color name="colorRed">#ca0000</color>
 </resources>

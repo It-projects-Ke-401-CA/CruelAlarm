@@ -26,11 +26,12 @@ import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
-import com.weiaett.cruelalarm.photo_manager.PhotoManagerFragment;
 import com.weiaett.cruelalarm.R;
 import com.weiaett.cruelalarm.graphics.ColorCircleDrawable;
 import com.weiaett.cruelalarm.models.Alarm;
+import com.weiaett.cruelalarm.photo_manager.PhotoManagerFragment;
 import com.weiaett.cruelalarm.utils.Utils;
 import com.weiaett.cruelalarm.utils.Weekday;
 
@@ -191,7 +192,7 @@ class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     void addAlarm(Alarm alarm) {
-        alarm.addToDatabase();
+        Utils.callAlarmScheduleService(context);
         alarms.add(alarm);
         reorderAllAndAccentOne(alarm);
     }
@@ -209,7 +210,34 @@ class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     void setAlarmParams(int position, Uri toneUri, String tone, boolean hasVibration, List<String> images) {
         Alarm alarm = alarms.get(position);
         alarm.setImages(images);
+        if (images.isEmpty() && alarm.getIsActive()) {
+            Toast.makeText(context, R.string.toast_no_photo, Toast.LENGTH_LONG).show();
+            alarm.setIsActive(false);
+            alarm.updateInDatabase();
+            notifyItemChanged(position);
+        }
         setAlarmParams(position, toneUri, tone, hasVibration);
+    }
+
+    void setAlarmParams(int alarmId, List<String> images) {
+        int position = -1;
+        for (int i = 0; i < alarms.size(); i++) {
+            if (alarms.get(i).getId() == alarmId) {
+                position = i;
+                break;
+            }
+        }
+        if (position < 0) {
+            return;
+        }
+        Alarm alarm = alarms.get(position);
+        alarm.setImages(images);
+        if (images.isEmpty() && alarm.getIsActive()) {
+            Toast.makeText(context, R.string.toast_no_photo, Toast.LENGTH_LONG).show();
+            alarm.setIsActive(false);
+            alarm.updateInDatabase();
+            notifyItemChanged(position);
+        }
     }
 
     void onActivityResult(int resultCode, Intent ringtoneIntent) {
@@ -339,6 +367,12 @@ class AlarmListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             activateAlarmView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    if (!item.getIsActive()) {
+                        if (item.getImages().isEmpty()) {
+                            Toast.makeText(context, context.getString(R.string.toast_no_photo), Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                    }
                     activateAlarmView.setColorFilter(!item.getIsActive() ?
                             context.getResources().getColor(R.color.colorAccent) :
                             context.getResources().getColor(R.color.colorNotActive));

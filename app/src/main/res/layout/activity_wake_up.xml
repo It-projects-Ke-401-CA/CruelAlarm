@@ -1,32 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_wake_up"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
     android:orientation="vertical"
     android:gravity="center_horizontal|clip_vertical"
     tools:context="com.weiaett.cruelalarm.WakeUpActivity">
 
-    <Button
-        android:text="Выключить"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/btnTurnOff" />
+    <include layout="@layout/wake_up_surface"
+        android:visibility="visible"
+        android:id="@+id/incWakeUp"/>
 
-    <Button
-        android:text="Повторить"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/btnRepeat" />
+    <include layout="@layout/camera_surface"
+        android:visibility="gone"
+        android:id="@+id/incCamera"/>
 
-    <TextView
-        android:text="Описание"
+    <ProgressBar
+        style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/tvDescription" />
-</LinearLayout>
+        android:layout_centerInParent="true"
+        android:id="@+id/progressBar"
+        android:visibility="gone"/>
+
+</RelativeLayout>

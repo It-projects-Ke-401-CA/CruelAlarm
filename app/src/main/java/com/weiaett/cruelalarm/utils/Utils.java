@@ -4,16 +4,19 @@ import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.KeyguardManager;
+import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.PowerManager;
+import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 
 import com.weiaett.cruelalarm.sheduling.AlarmServiceBroadcastReceiver;
@@ -149,11 +152,11 @@ public class Utils {
         }
     }
 
-    public static int pxToDp(int px) {
+    private static int pxToDp(int px) {
         return (int) (px / Resources.getSystem().getDisplayMetrics().density);
     }
 
-    public static int dpToPx(int dp) {
+    private static int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 
@@ -164,4 +167,18 @@ public class Utils {
         display.getMetrics(metrics);
         return metrics;
     }
+
+    public static void unlockScreen(AppCompatActivity activity) {
+        final Window window = activity.getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+    }
+
+//    public static void lockScreen(AppCompatActivity activity) {
+//        DevicePolicyManager devicePolicyManager;
+//        devicePolicyManager = (DevicePolicyManager) activity.getSystemService(Context.DEVICE_POLICY_SERVICE);
+//        devicePolicyManager.lockNow();
+//    }
 }

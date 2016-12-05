@@ -149,6 +149,9 @@ public class DBHelper extends SQLiteOpenHelper {
         try {
             if (cursor.moveToFirst()) {
                 bindAlarm(alarm, cursor);
+                if (alarm.getImages().isEmpty()) {
+                    turnAlarmOff(alarm.getId(), db);
+                }
             }
         } catch (Exception e) {
             Log.d(TAG, e.getMessage());
@@ -302,6 +305,18 @@ public class DBHelper extends SQLiteOpenHelper {
 //        db.rawQuery(ALARM_DELETE_QUERY, null);
     }
 
+    public void deleteImageAlarm(String imagePath) {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            if (db.delete(PHOTO_ALARM_TABLE, COLUMN_PHOTO_ID +
+                    String.format("= '%s'", imagePath), null) != 1) {
+                throw new DatabaseException(String.format("Not deleted id = %s", imagePath));
+            }
+        } catch (DatabaseException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void setAlarmPhotos(int id, List<String> photos) {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransaction();
@@ -322,7 +337,18 @@ public class DBHelper extends SQLiteOpenHelper {
             statement.execute();
         }
 
+        if (photos.isEmpty()) {
+            turnAlarmOff(id, db);
+        }
+
         db.setTransactionSuccessful();
         db.endTransaction();
+    }
+
+    private void turnAlarmOff(int id, SQLiteDatabase db) {
+        String sql = String.format("UPDATE %1$s SET %2$s = %3$s WHERE %4$s = %5$s",
+                ALARM_TABLE, COLUMN_ALARM_IS_ACTIVE, 0, COLUMN_ALARM_ID, id);
+        SQLiteStatement statement = db.compileStatement(sql);
+        statement.execute();
     }
 }
