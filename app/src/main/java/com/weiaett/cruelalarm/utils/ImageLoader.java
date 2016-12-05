@@ -17,7 +17,7 @@ import java.util.Locale;
 
 public class ImageLoader {
 
-    public static void savePhoto(Context context, Bitmap bitmap) {
+    public static Uri savePhoto(Context context, Bitmap bitmap) {
         String path = Environment.getExternalStorageDirectory().getPath() + "/Weiaett/alarm/";
 //        String path = context.getFilesDir().getAbsolutePath() + File.separator + "photos";
         File dir = new File(path);
@@ -52,6 +52,7 @@ public class ImageLoader {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+        return Uri.fromFile(image);
     }
 
     public static Uri prepareUri(Context context) {

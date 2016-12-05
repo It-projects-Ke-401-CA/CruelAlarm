@@ -4,11 +4,13 @@ machine:
 
 ## Customize dependencies
 dependencies:
+  cache_directories:
+    - opencvSDK
   pre:
-    - echo y | android update sdk --no-ui --all --filter build-tools-24.0.1
+    - echo y | android update sdk --no-ui --all --filter build-tools-24.0.3
     - echo y | android update sdk --no-ui --all --filter android-24
     - echo y | android update sdk --no-ui --all --filter extra-android-m2repository
-
+    - bash ./install_opencv.sh
   override:
     - chmod +x gradlew
     - ANDROID_HOME=/usr/local/android-sdk-linux ./gradlew dependencies

@@ -13,6 +13,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
@@ -124,6 +125,7 @@ public class SettingsActivity extends AppCompatActivity {
         tvPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.d("AAAA", "Photo manager should work");
                 Intent intent = new Intent(SettingsActivity.this, PhotoManagerActivity.class);
                 startActivity(intent);
             }

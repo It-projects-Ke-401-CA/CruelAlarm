@@ -36,6 +36,10 @@ import com.weiaett.cruelalarm.models.Alarm;
 import com.weiaett.cruelalarm.utils.DBHelper;
 import com.weiaett.cruelalarm.utils.Utils;
 
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+
 import java.util.Calendar;
 import java.util.List;
 
@@ -55,10 +59,26 @@ public class AlarmListActivity extends AppCompatActivity
 
     private List<String> photos;
 
+
+    private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                    Log.i("OpenCV", "OpenCV loaded successfully");
+                    break;
+                default:
+                    super.onManagerConnected(status);
+                    Log.i("OpenCV", "Something went wrong with OpenCV load");
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alarm_list);
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_11, this, loaderCallback);
 
         recyclerView = (RecyclerView) this.findViewById(R.id.list);
         recyclerView.setLayoutManager(new SmoothLLManager(this, LinearLayoutManager.VERTICAL, false));

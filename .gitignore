@@ -13,6 +13,13 @@
 *.apk
 *.ap_
 
+### OpenCV
+openCVLibrary2411/build
+openCVLibrary2411/src/main/java
+!openCVLibrary2411/src/main/java/org/opencv/android/AsyncServiceHelper.java
+app/src/main/jniLibs
+
+
 # Files for the Dalvik VM
 *.dex
 

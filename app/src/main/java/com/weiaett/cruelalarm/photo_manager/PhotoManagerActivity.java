@@ -1,14 +1,8 @@
 package com.weiaett.cruelalarm.photo_manager;
 
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
 import android.hardware.Camera;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.ActionBar;
@@ -16,9 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -27,13 +19,12 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.WindowManager;
-import android.widget.TableRow;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.weiaett.cruelalarm.R;
-import com.weiaett.cruelalarm.WakeUpActivity;
-import com.weiaett.cruelalarm.graphics.AutofitRecyclerView;
+import com.weiaett.cruelalarm.img_proc.ImgProcessor;
 import com.weiaett.cruelalarm.utils.ImageLoader;
 
 import java.io.File;
@@ -47,19 +38,15 @@ public class PhotoManagerActivity extends AppCompatActivity implements
         RecyclerView.OnItemTouchListener,
         SurfaceHolder.Callback {
 
-    private static final int CAMERA_REQUEST = 0;
-    private Uri fileUri;
     private ActionMode actionMode;
     private GestureDetectorCompat gestureDetector;
-    private PhotoManagerActivity.RecyclerViewOnGestureListener recyclerViewOnGestureListener;
     private PhotoManagerFragment photoManagerFragment;
     private SurfaceHolder surfaceHolder;
     private PhotoManagerAdapter photoManagerAdapter;
     private RecyclerView recyclerView;
     private View viewCamera;
     private View viewWakeUp;
-    private String SCAN_PATH;
-    private static final String FILE_TYPE = "image/*";
+    private TextView tvProcessing;
     private Camera camera;
 
     @Override
@@ -89,18 +76,15 @@ public class PhotoManagerActivity extends AppCompatActivity implements
                         e.printStackTrace();
                     }
                 }
-//                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-//                fileUri = ImageLoader.prepareUri(PhotoManagerActivity.this);
-//                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
-//                startActivityForResult(cameraIntent, CAMERA_REQUEST);
             }
         });
 
-        recyclerViewOnGestureListener = new PhotoManagerActivity.RecyclerViewOnGestureListener();
+        RecyclerViewOnGestureListener recyclerViewOnGestureListener = new RecyclerViewOnGestureListener();
         gestureDetector = new GestureDetectorCompat(this, recyclerViewOnGestureListener);
 
         viewCamera = findViewById(R.id.incCamera);
         viewWakeUp = findViewById(R.id.incWakeUp);
+        tvProcessing = (TextView) findViewById(R.id.tvProcessing);
 
         photoManagerFragment = (PhotoManagerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.fragmentPhotoManager);
@@ -147,6 +131,8 @@ public class PhotoManagerActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
                 camera.takePicture(null, null, PhotoManagerActivity.this.onPictureTaken);
+                viewCamera.setVisibility(View.GONE);
+                tvProcessing.setVisibility(View.VISIBLE);
             }
         });
     }
@@ -168,9 +154,19 @@ public class PhotoManagerActivity extends AppCompatActivity implements
             } catch (IOException e) {
                 Log.d("Camera", "Error accessing file: " + e.getMessage());
             }
-            viewCamera.setVisibility(View.GONE);
-            viewWakeUp.setVisibility(View.VISIBLE);
-            photoManagerFragment.addPhoto(lastPhoto);
+
+            Uri fileUri = Uri.fromFile(lastPhoto);
+            Uri newUri = ImgProcessor.Companion.process(getApplicationContext(), fileUri, true);
+            if(newUri == null){
+                Toast.makeText(getApplicationContext(), "На снимке не хватает\n контрастных участков", Toast.LENGTH_SHORT).show();
+                tvProcessing.setVisibility(View.GONE);
+                viewCamera.setVisibility(View.VISIBLE);
+            } else {
+                tvProcessing.setVisibility(View.GONE);
+                viewCamera.setVisibility(View.GONE);
+                viewWakeUp.setVisibility(View.VISIBLE);
+                photoManagerFragment.addPhoto(new File(newUri.getPath()));
+            }
         }
     };
 
@@ -181,6 +177,15 @@ public class PhotoManagerActivity extends AppCompatActivity implements
             actionMode.setTitle(getString(R.string.selection_count) + photoManagerAdapter.getSelectedItemCount());
         } else {
             actionMode.finish();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (camera != null){
+            camera.release();
+            camera = null;
         }
     }
 
@@ -197,13 +202,6 @@ public class PhotoManagerActivity extends AppCompatActivity implements
     @Override
     public void onRequestDisallowInterceptTouchEvent(boolean b) {
     }
-
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        if (requestCode == CAMERA_REQUEST && resultCode == Activity.RESULT_OK) {
-//            photoManagerFragment.addPhoto(new File(fileUri.getPath()));
-//        }
-    }
-
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
@@ -267,36 +265,6 @@ public class PhotoManagerActivity extends AppCompatActivity implements
 
     }
 
-    private  MediaScannerConnection conn;
-    private void notifySystemWithImage(final File imageFile) {
-
-        conn = new MediaScannerConnection(this, new MediaScannerConnection.MediaScannerConnectionClient() {
-
-            @Override
-            public void onScanCompleted(String path, Uri uri) {
-
-                try {
-                    if (uri != null) {
-                        Intent intent = new Intent(Intent.ACTION_VIEW);
-                        intent.setDataAndType(uri, "image/*");
-                        startActivity(intent);
-                    }
-                } finally {
-                    conn.disconnect();
-                    conn = null;
-                }
-            }
-
-            @Override
-            public void onMediaScannerConnected() {
-                conn.scanFile(imageFile.getAbsolutePath(), "*/*");
-
-            }
-        });
-
-        conn.connect();
-    }
-
     private class RecyclerViewOnGestureListener extends GestureDetector.SimpleOnGestureListener {
 
         List<Integer> selectedItemPositions;
@@ -310,8 +278,6 @@ public class PhotoManagerActivity extends AppCompatActivity implements
                     public void onClick(View view) {
                         if (actionMode != null) {
                             toggleSelection(recyclerView.getChildAdapterPosition(view));
-                        } else {
-                            //notifySystemWithImage(new File("/storage/emulated/0/Weiaett/alarm/1479816124572.png"));
                         }
                     }
                 });
